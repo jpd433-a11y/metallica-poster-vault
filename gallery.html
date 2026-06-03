@@ -1,9 +1,3 @@
-utput gallery.html contents
-bash
-
-cat /mnt/user-data/outputs/metallica-vault/gallery.html
-Output
-
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
@@ -178,12 +172,12 @@ Output
       </div>
     </div>
   </header>
-
+ 
   <div class="admin-bar" id="admin-bar" style="display:none">
     <div class="admin-label"><i class="ti ti-shield"></i> Admin Mode</div>
     <button class="btn-admin" onclick="openAddModal()"><i class="ti ti-plus"></i> Add Poster</button>
   </div>
-
+ 
   <div class="hero">
     <div>
       <div class="hero-title">Master <span>Gallery</span></div>
@@ -196,7 +190,7 @@ Output
       </a>
     </div>
   </div>
-
+ 
   <div class="toolbar">
     <div class="search-wrap">
       <i class="ti ti-search"></i>
@@ -214,7 +208,7 @@ Output
       <option value="not-owned">Not Yet Owned</option>
     </select>
   </div>
-
+ 
   <div class="grid-container">
     <div class="poster-grid" id="grid"></div>
     <div class="empty-state" id="empty" style="display:none">
@@ -223,11 +217,11 @@ Output
       <p>Try adjusting your filters</p>
     </div>
   </div>
-
+ 
   <footer>
     <div class="footer-brand">⚡ <em>Metallica</em> Poster Vault</div>
   </footer>
-
+ 
   <!-- DETAIL MODAL -->
   <div class="overlay" id="modal-detail">
     <div class="modal">
@@ -238,7 +232,7 @@ Output
       <div id="detail-body"></div>
     </div>
   </div>
-
+ 
   <!-- ADMIN ADD/EDIT MODAL -->
   <div class="overlay" id="modal-form">
     <div class="modal">
@@ -246,6 +240,16 @@ Output
         <div class="modal-title"><i class="ti ti-photo-plus"></i><span id="form-title">Add to Gallery</span></div>
         <button class="btn-close" onclick="closeModal('modal-form')"><i class="ti ti-x"></i></button>
       </div>
+      <!-- AI QUICK FILL -->
+      <div style="background:var(--red-soft);border:1px solid rgba(192,57,43,0.3);border-radius:4px;padding:12px 14px;margin-bottom:16px">
+        <div style="font-size:10px;letter-spacing:2px;color:var(--red-hi);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px"><i class="ti ti-sparkles"></i> AI Quick Fill</div>
+        <div style="display:flex;gap:8px">
+          <input class="form-control" id="ai-prompt" type="text" placeholder='Describe the poster e.g. "Munk One Paris Night 1 rainbow foil 2023"' style="flex:1;font-size:13px">
+          <button type="button" id="ai-btn" onclick="aiFill()" style="background:var(--red);border:none;border-radius:3px;color:#fff;padding:8px 14px;font-family:'Black Ops One',cursive;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;white-space:nowrap;transition:background .15s" onmouseover="this.style.background='var(--red-hi)'" onmouseout="this.style.background='var(--red)'"><i class="ti ti-wand"></i> Fill</button>
+        </div>
+        <div id="ai-status" style="font-size:12px;color:var(--muted);margin-top:6px;display:none"></div>
+      </div>
+ 
       <div class="form-group">
         <label class="form-label">Poster Name *</label>
         <input class="form-control" id="af-name" type="text" placeholder="e.g. Master of Puppets Tour — Chicago 1986">
@@ -309,9 +313,9 @@ Output
       </div>
     </div>
   </div>
-
+ 
   <div class="toast" id="toast"><i class="ti ti-bookmarks"></i><span id="toast-msg">Added!</span></div>
-
+ 
   <script>
     const SUPABASE_URL = 'https://olppjterjslxypnqccbv.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_XawzbnyWt4bs17hkhVO27A_4lun6jWY';
@@ -319,12 +323,12 @@ Output
     const { createClient } = supabase;
     const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
     const THEME_KEY = 'metallica_vault_theme';
-
+ 
     let gallery = [];
     let vaultIds = new Set();
     let currentUser = null;
     let editId = null;
-
+ 
     /* ── THEME ── */
     function setTheme(t) {
       document.documentElement.setAttribute('data-theme', t);
@@ -332,29 +336,29 @@ Output
       document.getElementById('btn-dark').classList.toggle('active', t === 'dark');
       document.getElementById('btn-light').classList.toggle('active', t === 'light');
     }
-
+ 
     /* ── AUTH ── */
     async function signOut() {
       await sb.auth.signOut();
       window.location.href = 'auth.html';
     }
-
+ 
     function isAdmin(user) {
       return user && user.email === ADMIN_EMAIL;
     }
-
+ 
     /* ── DATA ── */
     async function loadGallery() {
       const { data, error } = await sb.from('gallery_posters').select('*').order('created_at', { ascending: false });
       if (!error) gallery = data || [];
     }
-
+ 
     async function loadVaultIds() {
       if (!currentUser) { vaultIds = new Set(); return; }
       const { data } = await sb.from('vault_posters').select('gallery_id').eq('user_id', currentUser.id);
       vaultIds = new Set((data || []).map(r => r.gallery_id));
     }
-
+ 
     async function addToVault(galleryId, e) {
       if (e) e.stopPropagation();
       if (!currentUser) { window.location.href = 'auth.html'; return; }
@@ -369,32 +373,32 @@ Output
         render();
       }
     }
-
+ 
     function updateVaultBadge() {
       document.getElementById('vault-count').textContent = vaultIds.size + ' in your vault';
     }
-
+ 
     /* ── RENDER ── */
     function render() {
       const q  = document.getElementById('search').value.toLowerCase().trim();
       const ed = document.getElementById('f-edition').value;
       const ow = document.getElementById('f-owned').value;
-
+ 
       let list = gallery.filter(p => {
         const qm = !q || p.name.toLowerCase().includes(q) || (p.artist||'').toLowerCase().includes(q) || String(p.year||'').includes(q);
         const em = !ed || p.edition === ed;
         const om = !ow || (ow === 'owned' ? vaultIds.has(p.id) : !vaultIds.has(p.id));
         return qm && em && om;
       });
-
+ 
       const grid  = document.getElementById('grid');
       const empty = document.getElementById('empty');
-
+ 
       if (list.length === 0) { grid.style.display='none'; empty.style.display='block'; return; }
       grid.style.display='grid'; empty.style.display='none';
-
+ 
       const admin = isAdmin(currentUser);
-
+ 
       grid.innerHTML = list.map((p, i) => {
         const inV = vaultIds.has(p.id);
         const bc  = 'badge-' + p.edition.replace(/ /g,'');
@@ -423,7 +427,7 @@ Output
         </div>`;
       }).join('');
     }
-
+ 
     /* ── DETAIL ── */
     function openDetail(id) {
       const p = gallery.find(x => x.id === id);
@@ -454,19 +458,21 @@ Output
       `;
       document.getElementById('modal-detail').classList.add('open');
     }
-
+ 
     /* ── ADMIN CRUD ── */
     function openAddModal() {
       editId = null;
       document.getElementById('form-title').textContent = 'Add to Gallery';
       ['af-name','af-artist','af-run','af-size','af-notes'].forEach(id => document.getElementById(id).value='');
+      document.getElementById('ai-prompt').value = '';
+      document.getElementById('ai-status').style.display = 'none';
       document.getElementById('af-year').value=''; document.getElementById('af-edition').value='Regular';
       resetImage();
       document.getElementById('form-error').style.display='none';
       document.getElementById('modal-form').classList.add('open');
       setTimeout(()=>document.getElementById('af-name').focus(),50);
     }
-
+ 
     function openEdit(id, e) {
       if (e) e.stopPropagation();
       const p = gallery.find(x=>x.id===id); if(!p) return;
@@ -483,7 +489,7 @@ Output
       loadImageIntoForm(p.image||'');
       document.getElementById('modal-form').classList.add('open');
     }
-
+ 
     async function savePoster() {
       const name = document.getElementById('af-name').value.trim();
       if (!name) { showFormError('Poster name is required.'); return; }
@@ -511,19 +517,66 @@ Output
       render();
       showToast(editId ? 'Poster updated!' : 'Poster added to gallery!');
     }
-
+ 
     async function deletePoster(id, e) {
       if (e) e.stopPropagation();
       if (!confirm('Remove this poster from the gallery?')) return;
       const { error } = await sb.from('gallery_posters').delete().eq('id', id);
       if (!error) { await loadGallery(); render(); showToast('Poster removed.'); }
     }
-
+ 
     function showFormError(msg) {
       const el = document.getElementById('form-error');
       el.textContent = msg; el.style.display='block';
     }
-
+ 
+    /* ── AI QUICK FILL ── */
+    async function aiFill() {
+      const prompt = document.getElementById('ai-prompt').value.trim();
+      if (!prompt) return;
+      const btn    = document.getElementById('ai-btn');
+      const status = document.getElementById('ai-status');
+      btn.textContent = 'Thinking…';
+      btn.disabled = true;
+      status.style.display = 'block';
+      status.textContent = 'AI is filling in the details…';
+ 
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 500,
+            system: `You are a Metallica concert poster expert. Given a description of a poster, extract and return ONLY a JSON object with these fields: name (full descriptive poster name), year (number or null), edition (must be exactly one of: "Regular", "Artist Proof", "Foil"), artist (illustrator name or null), run (print run number or null), size (e.g. "18x24" or null), notes (any extra details or null). Return only valid JSON, no markdown.`,
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+ 
+        const data = await res.json();
+        const text = data.content?.find(b => b.type === 'text')?.text || '';
+        const json = JSON.parse(text.replace(/```json|```/g, '').trim());
+ 
+        if (json.name)    document.getElementById('af-name').value    = json.name;
+        if (json.year)    document.getElementById('af-year').value    = json.year;
+        if (json.edition) document.getElementById('af-edition').value = json.edition;
+        if (json.artist)  document.getElementById('af-artist').value  = json.artist;
+        if (json.run)     document.getElementById('af-run').value     = json.run;
+        if (json.size)    document.getElementById('af-size').value    = json.size;
+        if (json.notes)   document.getElementById('af-notes').value   = json.notes;
+ 
+        status.style.color = 'var(--green-hi)';
+        status.textContent = '✓ Fields filled — review and save!';
+        document.getElementById('ai-prompt').value = '';
+      } catch(e) {
+        status.style.color = 'var(--red-hi)';
+        status.textContent = 'Could not parse response — try rephrasing.';
+      }
+ 
+      btn.innerHTML = '<i class="ti ti-wand"></i> Fill';
+      btn.disabled = false;
+    }
+ 
     /* ── IMAGE DROP ── */
     function initDropZone() {
       const zone = document.getElementById('drop-zone');
@@ -537,47 +590,47 @@ Output
       });
       file.addEventListener('change', () => { if (file.files[0]) readFile(file.files[0]); });
     }
-
+ 
     function readFile(file) {
       const r = new FileReader();
       r.onload = e => { showPreview(e.target.result); document.getElementById('af-image').value=e.target.result; document.getElementById('af-image-url').value=''; };
       r.readAsDataURL(file);
     }
-
+ 
     function onUrlInput() {
       const url = document.getElementById('af-image-url').value.trim();
       document.getElementById('af-image').value = url;
       if (url) showPreview(url); else resetImageDisplay();
     }
-
+ 
     function showPreview(src) {
       document.getElementById('drop-img').src=src;
       document.getElementById('drop-preview').style.display='flex';
       document.getElementById('drop-placeholder').style.display='none';
     }
-
+ 
     function clearImage(e) { e.stopPropagation(); resetImage(); }
-
+ 
     function resetImage() {
       document.getElementById('af-image').value='';
       document.getElementById('af-image-url').value='';
       document.getElementById('af-file').value='';
       resetImageDisplay();
     }
-
+ 
     function resetImageDisplay() {
       document.getElementById('drop-img').src='';
       document.getElementById('drop-preview').style.display='none';
       document.getElementById('drop-placeholder').style.display='block';
     }
-
+ 
     function loadImageIntoForm(src) {
       if (!src) { resetImage(); return; }
       document.getElementById('af-image').value=src;
       if (src.startsWith('http')) document.getElementById('af-image-url').value=src;
       showPreview(src);
     }
-
+ 
     /* ── TOAST ── */
     let toastTimer;
     function showToast(msg) {
@@ -587,38 +640,39 @@ Output
       clearTimeout(toastTimer);
       toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
     }
-
+ 
     function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
     function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
+ 
     document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open')}));
     document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.overlay.open').forEach(el=>el.classList.remove('open'))});
-
+ 
     /* ── INIT ── */
     async function init() {
       setTheme(localStorage.getItem(THEME_KEY)||'dark');
       const { data: { session } } = await sb.auth.getSession();
       if (!session) { window.location.href='auth.html'; return; }
       currentUser = session.user;
-
+ 
       // show user chip
       const { data: profile } = await sb.from('profiles').select('display_name').eq('id', currentUser.id).single();
       const name = profile?.display_name || currentUser.email.split('@')[0];
       document.getElementById('user-name').textContent = name;
       document.getElementById('user-avatar').textContent = name[0].toUpperCase();
       document.getElementById('user-chip').style.display='flex';
-
+ 
       // show admin bar if admin
       if (isAdmin(currentUser)) document.getElementById('admin-bar').style.display='flex';
-
+ 
       await loadGallery();
       await loadVaultIds();
       updateVaultBadge();
       initDropZone();
       render();
     }
-
+ 
     init();
   </script>
 </body>
 </html>
+ 
