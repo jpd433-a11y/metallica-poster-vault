@@ -1,14 +1,20 @@
+utput gallery.html contents
+bash
+
+cat /mnt/user-data/outputs/metallica-vault/gallery.html
+Output
+
 <!DOCTYPE html>
-<html lang="en" data-theme="light"><head>
-<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<html lang="en" data-theme="dark">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Metallica Poster Vault — Gallery</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com/">
-  <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
-  <link href="gallery22_files/css2.css" rel="stylesheet">
-  <link rel="stylesheet" href="gallery22_files/tabler-icons.min.css">
-  <script src="gallery22_files/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Barlow+Condensed:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     [data-theme="dark"] {
@@ -158,12 +164,12 @@
     </div>
     <div class="header-right">
       <nav class="nav-tabs">
-        <a class="nav-tab active" href="file:///C:/Users/jpd43/Downloads/gallery.html">Gallery</a>
-        <a class="nav-tab" href="file:///C:/Users/jpd43/Downloads/index.html">My Vault</a>
+        <a class="nav-tab active" href="gallery.html">Gallery</a>
+        <a class="nav-tab" href="index.html">My Vault</a>
       </nav>
       <div class="theme-toggle">
-        <button class="theme-btn" id="btn-dark" onclick="setTheme('dark')"><i class="ti ti-moon"></i></button>
-        <button class="theme-btn active" id="btn-light" onclick="setTheme('light')"><i class="ti ti-sun"></i></button>
+        <button class="theme-btn active" id="btn-dark" onclick="setTheme('dark')"><i class="ti ti-moon"></i></button>
+        <button class="theme-btn" id="btn-light" onclick="setTheme('light')"><i class="ti ti-sun"></i></button>
       </div>
       <div class="user-chip" id="user-chip" style="display:none">
         <div class="user-avatar" id="user-avatar">?</div>
@@ -185,7 +191,7 @@
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <div class="vault-badge"><i class="ti ti-bookmarks"></i><span id="vault-count">0 in your vault</span></div>
-      <a href="file:///C:/Users/jpd43/Downloads/index.html" style="display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--text-sec);padding:8px 14px;font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;text-decoration:none;transition:all .15s" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red-hi)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-sec)'">
+      <a href="index.html" style="display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--text-sec);padding:8px 14px;font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;text-decoration:none;transition:all .15s" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red-hi)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-sec)'">
         <i class="ti ti-arrow-right"></i> View Vault
       </a>
     </div>
@@ -197,13 +203,13 @@
       <input class="search-input" type="text" id="search" placeholder="Search posters…" oninput="render()">
     </div>
     <select class="filter-select" id="f-edition" onchange="render()">
-      <option value="" selected="selected">All Editions</option>
+      <option value="">All Editions</option>
       <option value="Regular">Regular</option>
       <option value="Artist Proof">Artist Proof</option>
       <option value="Foil">Foil</option>
     </select>
     <select class="filter-select" id="f-owned" onchange="render()">
-      <option value="" selected="selected">All Posters</option>
+      <option value="">All Posters</option>
       <option value="owned">In My Vault</option>
       <option value="not-owned">Not Yet Owned</option>
     </select>
@@ -252,7 +258,7 @@
         <div class="form-group">
           <label class="form-label">Edition</label>
           <select class="form-control" id="af-edition">
-            <option selected="selected">Regular</option><option>Artist Proof</option><option>Foil</option>
+            <option>Regular</option><option>Artist Proof</option><option>Foil</option>
           </select>
         </div>
       </div>
@@ -268,7 +274,7 @@
       </div>
       <div class="form-group">
         <label class="form-label">Size</label>
-        <input class="form-control" id="af-size" type="text" placeholder="e.g. 18&quot; × 24&quot;">
+        <input class="form-control" id="af-size" type="text" placeholder='e.g. 18" × 24"'>
       </div>
       <div class="form-group">
         <label class="form-label">Poster Image</label>
@@ -309,7 +315,7 @@
   <script>
     const SUPABASE_URL = 'https://olppjterjslxypnqccbv.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_XawzbnyWt4bs17hkhVO27A_4lun6jWY';
-    const ADMIN_EMAIL  = 'Jpd433@gmail.com';
+    const ADMIN_EMAIL  = 'jpd433@gmail.com';
     const { createClient } = supabase;
     const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
     const THEME_KEY = 'metallica_vault_theme';
@@ -613,4 +619,6 @@
     }
 
     init();
-  </script></body></html>
+  </script>
+</body>
+</html>
