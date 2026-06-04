@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Metallica Poster Vault — My Vault</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Barlow+Condensed:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    [data-theme="dark"]{--bg:#080808;--surface:#101010;--card:#141414;--card-hover:#1c1c1c;--border:#242424;--border-hi:#363636;--header-bg:#050505;--toolbar-bg:#0d0d0d;--ribbon-bg:#0a0a0a;--red:#c0392b;--red-hi:#e74c3c;--red-soft:rgba(192,57,43,0.12);--green:#27ae60;--green-hi:#2ecc71;--green-soft:rgba(39,174,96,0.15);--gold:#c9920a;--gold-lite:#f0c040;--text:#e2e2e2;--text-sec:#999;--muted:#666;--faint:#1e1e1e;--shadow:rgba(0,0,0,0.5);--input-bg:#0a0a0a;--modal-bg:#141414;--logo-color:#ffffff}
+    [data-theme="light"]{--bg:#f5f3ef;--surface:#ffffff;--card:#ffffff;--card-hover:#faf8f5;--border:#e0dbd4;--border-hi:#c8c0b8;--header-bg:#1a0a08;--toolbar-bg:#faf8f5;--ribbon-bg:#ffffff;--red:#c0392b;--red-hi:#e74c3c;--red-soft:rgba(192,57,43,0.08);--green:#1e8449;--green-hi:#27ae60;--green-soft:rgba(30,132,73,0.1);--gold:#a07008;--gold-lite:#b8860b;--text:#1a1a1a;--text-sec:#555;--muted:#888;--faint:#f0ede8;--shadow:rgba(0,0,0,0.1);--input-bg:#f5f3ef;--modal-bg:#ffffff;--logo-color:#ffffff}
+    html{scroll-behavior:smooth}
+    body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-serif;min-height:100vh;transition:background .25s,color .25s}
+    header{position:relative;background:var(--header-bg);border-bottom:2px solid var(--red);padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:68px;overflow:hidden}
+    header::before{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(-55deg,transparent,transparent 18px,rgba(192,57,43,.06) 18px,rgba(192,57,43,.06) 19px)}
+    .logo{display:flex;align-items:baseline;gap:10px;text-decoration:none;position:relative;z-index:1}
+    .logo-mark{font-family:'Black Ops One',cursive;font-size:24px;color:var(--logo-color);letter-spacing:2px;line-height:1}
+    .logo-mark em{color:var(--red-hi);font-style:normal}
+    .logo-sub{font-size:10px;letter-spacing:4px;color:rgba(255,255,255,.4);text-transform:uppercase;font-weight:300}
+    .header-right{display:flex;align-items:center;gap:10px;position:relative;z-index:1}
+    .nav-tabs{display:flex;gap:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:4px;padding:3px}
+    .nav-tab{padding:6px 16px;border-radius:3px;font-family:'Black Ops One',cursive;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.5);cursor:pointer;text-decoration:none;transition:all .15s;border:none;background:transparent}
+    .nav-tab:hover{color:rgba(255,255,255,.8)}
+    .nav-tab.active{background:var(--red);color:#fff}
+    .theme-toggle{display:flex;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:3px}
+    .theme-btn{background:transparent;border:none;width:30px;height:26px;border-radius:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;color:rgba(255,255,255,.5);transition:all .2s}
+    .theme-btn.active{background:var(--red);color:#fff}
+    .user-chip{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:4px 12px 4px 6px}
+    .user-avatar{width:26px;height:26px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-family:'Black Ops One',cursive;font-size:11px;color:#fff;flex-shrink:0}
+    .user-name{font-size:12px;letter-spacing:1px;color:rgba(255,255,255,.7);text-transform:uppercase;max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .btn-signout{background:transparent;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:16px;padding:2px;transition:color .15s;display:flex;align-items:center}
+    .btn-signout:hover{color:var(--red-hi)}
+    .stats-ribbon{display:flex;background:var(--ribbon-bg);border-bottom:1px solid var(--border)}
+    .stat{flex:1;padding:14px 16px;border-right:1px solid var(--border);text-align:center}
+    .stat:last-child{border-right:none}
+    .stat-num{font-family:'Black Ops One',cursive;font-size:26px;color:var(--red-hi);line-height:1}
+    .stat-num.gold{color:var(--gold-lite)}
+    [data-theme="light"] .stat-num{color:var(--red)}
+    [data-theme="light"] .stat-num.gold{color:var(--gold)}
+    .stat-label{font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-top:3px}
+    .toolbar{display:flex;gap:10px;padding:14px 24px;background:var(--toolbar-bg);border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center}
+    .search-wrap{position:relative;flex:1;min-width:180px}
+    .search-wrap i{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:16px;pointer-events:none}
+    .search-input{width:100%;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:9px 12px 9px 34px;font-family:'Barlow Condensed',sans-serif;font-size:14px;transition:border-color .15s}
+    .search-input:focus{outline:none;border-color:var(--red)}
+    .search-input::placeholder{color:var(--muted);opacity:.6}
+    .filter-select{background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:9px 32px 9px 12px;font-family:'Barlow Condensed',sans-serif;font-size:13px;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-color:var(--input-bg)}
+    .filter-select:focus{outline:none;border-color:var(--red)}
+    .btn-primary{display:inline-flex;align-items:center;gap:7px;background:var(--red);border:none;border-radius:3px;color:#fff;padding:9px 18px;font-family:'Black Ops One',cursive;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:background .15s,transform .1s;white-space:nowrap}
+    .btn-primary:hover{background:var(--red-hi)}
+    .btn-primary:active{transform:scale(.97)}
+    .grid-container{padding:24px}
+    .poster-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+    [data-theme="light"] .poster-grid{gap:20px}
+    .poster-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:14px;transition:background .15s,border-color .15s,transform .15s,box-shadow .15s;position:relative;animation:fadeIn .3s ease both}
+    [data-theme="light"] .poster-card{box-shadow:0 2px 8px var(--shadow)}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .poster-card:hover{background:var(--card-hover);border-color:var(--red);transform:translateY(-2px)}
+    [data-theme="light"] .poster-card:hover{box-shadow:0 6px 20px var(--shadow)}
+    .poster-thumb{width:100%;aspect-ratio:2/3;background:var(--faint);border:1px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;position:relative;overflow:hidden}
+    .poster-thumb img{width:100%;height:100%;object-fit:cover;border-radius:3px;display:block}
+    .no-img{display:flex;flex-direction:column;align-items:center;gap:6px}
+    .no-img i{font-size:30px;color:var(--border-hi)}
+    .no-img span{font-size:9px;letter-spacing:2px;color:var(--border-hi);text-transform:uppercase}
+    .edition-badge{position:absolute;top:7px;right:7px;font-size:9px;letter-spacing:1.5px;font-weight:700;text-transform:uppercase;padding:3px 8px;border-radius:2px}
+    .badge-Regular{background:rgba(80,80,80,.85);color:#ccc}
+    .badge-ArtistProof{background:rgba(20,60,120,.9);color:#aaccff}
+    .badge-Foil{background:rgba(90,70,0,.9);color:#ffd700}
+    [data-theme="light"] .badge-Regular{background:#e8e4de;color:#666}
+    [data-theme="light"] .badge-ArtistProof{background:#143c78;color:#aaccff}
+    [data-theme="light"] .badge-Foil{background:#5a4600;color:#ffd700}
+    .poster-name{font-family:'Black Ops One',cursive;font-size:13px;color:var(--text);line-height:1.25;margin-bottom:5px;letter-spacing:.3px}
+    .poster-meta{font-size:12px;color:var(--text-sec);letter-spacing:.5px;line-height:1.65}
+    .poster-meta .val{color:var(--gold-lite);font-weight:600}
+    [data-theme="light"] .poster-meta .val{color:var(--gold)}
+    .cond-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle}
+    .cond-Mint{background:#00c853}.cond-NearMint{background:#69f0ae}.cond-VeryGood{background:#ffd740}.cond-Good{background:#ff9100}.cond-Fair{background:#ff3d00}
+    .card-actions{display:flex;gap:6px;margin-top:11px}
+    .btn-icon{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--muted);cursor:pointer;font-size:14px;transition:all .15s}
+    .btn-icon:hover{border-color:var(--red);color:var(--red-hi)}
+    .btn-icon.del:hover{border-color:var(--border-hi);color:var(--text-sec)}
+    .empty-state{padding:80px 20px;text-align:center;background:var(--card);border:2px dashed var(--border);border-radius:8px}
+    .empty-state i{font-size:52px;color:var(--border-hi);display:block;margin-bottom:16px}
+    .empty-state h2{font-family:'Black Ops One',cursive;font-size:18px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+    .empty-state p{font-size:13px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:20px}
+    .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
+    .overlay.open{display:flex}
+    .modal{background:var(--modal-bg);border:1px solid var(--border);border-top:3px solid var(--red);width:100%;max-width:440px;border-radius:6px;padding:26px;max-height:90vh;overflow-y:auto;scrollbar-width:thin;animation:slideUp .2s ease;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+    @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+    .modal-title{font-family:'Black Ops One',cursive;font-size:17px;letter-spacing:2px;color:var(--text);text-transform:uppercase;display:flex;align-items:center;gap:10px}
+    .modal-title i{color:var(--red)}
+    .btn-close{background:transparent;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px;line-height:1;transition:color .15s}
+    .btn-close:hover{color:var(--red-hi)}
+    .form-group{margin-bottom:13px}
+    .form-label{display:block;font-size:10px;letter-spacing:2.5px;color:var(--muted);text-transform:uppercase;margin-bottom:5px}
+    .form-control{width:100%;background:var(--input-bg);border:1px solid var(--border);border-radius:3px;color:var(--text);padding:9px 12px;font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:.5px;transition:border-color .15s}
+    .form-control:focus{outline:none;border-color:var(--red)}
+    .form-control::placeholder{color:var(--muted);opacity:.6}
+    .form-control option{background:var(--modal-bg);color:var(--text)}
+    textarea.form-control{resize:vertical;min-height:72px}
+    .form-row{display:flex;gap:10px}
+    .form-row .form-group{flex:1;min-width:0}
+    .modal-actions{display:flex;gap:10px;margin-top:20px}
+    .btn-save{flex:1;background:var(--red);border:none;border-radius:3px;color:#fff;padding:11px;font-family:'Black Ops One',cursive;font-size:13px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:background .15s}
+    .btn-save:hover{background:var(--red-hi)}
+    .btn-cancel-modal{background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--text-sec);padding:11px 18px;font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .15s}
+    .btn-cancel-modal:hover{border-color:var(--border-hi);color:var(--text)}
+    .detail-thumb{width:100%;aspect-ratio:2/3;max-height:220px;background:var(--faint);border:1px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;margin-bottom:18px;overflow:hidden}
+    .detail-thumb img{width:100%;height:100%;object-fit:cover}
+    .detail-thumb i{font-size:48px;color:var(--border-hi)}
+    .detail-row{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+    .detail-row:last-of-type{border-bottom:none}
+    .detail-key{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase}
+    .detail-val{color:var(--text);font-weight:600}
+    .detail-val.gold{color:var(--gold-lite)}
+    [data-theme="light"] .detail-val.gold{color:var(--gold)}
+    .notes-box{background:var(--red-soft);border:1px solid var(--border);border-left:3px solid var(--red);border-radius:2px;padding:10px 14px;margin-top:14px;font-size:13px;color:var(--text-sec);line-height:1.6;font-style:italic}
+    footer{border-top:1px solid var(--border);padding:18px 24px;display:flex;align-items:center;justify-content:space-between;margin-top:20px}
+    .footer-brand{font-family:'Black Ops One',cursive;font-size:14px;color:var(--muted);letter-spacing:2px}
+    .footer-brand em{color:var(--red);font-style:normal}
+    .footer-btn{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--muted);padding:7px 12px;font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .15s}
+    .footer-btn:hover{border-color:var(--border-hi);color:var(--text-sec)}
+    ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:3px}
+    @media(max-width:600px){header{padding:0 16px;height:60px}.logo-sub{display:none}.stats-ribbon{flex-wrap:wrap}.stat{min-width:50%}.toolbar{padding:12px 16px}.grid-container{padding:16px}.modal{padding:20px}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <div class="logo-mark">⚡ <em>Metallica</em> Poster Vault</div>
+      <div class="logo-sub">Collection Tracker</div>
+    </div>
+    <div class="header-right">
+      <nav class="nav-tabs">
+        <a class="nav-tab" href="gallery.html">Gallery</a>
+        <a class="nav-tab active" href="index.html">My Vault</a>
+      </nav>
+      <div class="theme-toggle">
+        <button class="theme-btn active" id="btn-dark" onclick="setTheme('dark')"><i class="ti ti-moon"></i></button>
+        <button class="theme-btn" id="btn-light" onclick="setTheme('light')"><i class="ti ti-sun"></i></button>
+      </div>
+      <div class="user-chip" id="user-chip" style="display:none">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <span class="user-name" id="user-name">User</span>
+        <button class="btn-signout" onclick="signOut()" title="Sign out"><i class="ti ti-logout"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <div class="stats-ribbon">
+    <div class="stat"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Total</div></div>
+    <div class="stat"><div class="stat-num" id="stat-ap">0</div><div class="stat-label">Artist Proof</div></div>
+    <div class="stat"><div class="stat-num" id="stat-foil">0</div><div class="stat-label">Foil</div></div>
+    <div class="stat"><div class="stat-num gold" id="stat-value">$0</div><div class="stat-label">Est. Value</div></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <i class="ti ti-search"></i>
+      <input class="search-input" type="text" id="search" placeholder="Search your vault…" oninput="render()">
+    </div>
+    <select class="filter-select" id="f-edition" onchange="render()">
+      <option value="">All Editions</option>
+      <option value="Regular">Regular</option>
+      <option value="Artist Proof">Artist Proof</option>
+      <option value="Foil">Foil</option>
+    </select>
+    <select class="filter-select" id="f-sort" onchange="render()">
+      <option value="newest">Newest First</option>
+      <option value="oldest">Oldest First</option>
+      <option value="value">Highest Value</option>
+      <option value="alpha">A – Z</option>
+    </select>
+    <button class="btn-primary" onclick="exportCSV()"><i class="ti ti-download"></i> Export</button>
+  </div>
+
+  <div class="grid-container">
+    <div class="poster-grid" id="grid"></div>
+    <div class="empty-state" id="empty" style="display:none">
+      <i class="ti ti-photo-off"></i>
+      <h2>Your Vault Is Empty</h2>
+      <p>Browse the gallery and add posters you own</p>
+      <a href="gallery.html" class="btn-primary" style="display:inline-flex;text-decoration:none"><i class="ti ti-photo"></i> Browse Gallery</a>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-brand">⚡ <em>Metallica</em> Poster Vault</div>
+  </footer>
+
+  <!-- EDIT MODAL -->
+  <div class="overlay" id="modal-edit">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title"><i class="ti ti-edit"></i><span id="edit-title"> Edit</span></div>
+        <button class="btn-close" onclick="closeModal('modal-edit')"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Condition</label>
+          <select class="form-control" id="e-condition">
+            <option>Mint</option><option>Near Mint</option><option>Very Good</option><option>Good</option><option>Fair</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Est. Value ($)</label>
+          <input class="form-control" id="e-value" type="number" placeholder="0" min="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Acquired</label>
+          <input class="form-control" id="e-acquired" type="date">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-control" id="e-notes" placeholder="Provenance, purchase info…"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel-modal" onclick="closeModal('modal-edit')">Cancel</button>
+        <button class="btn-save" onclick="saveEdit()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETAIL MODAL -->
+  <div class="overlay" id="modal-detail">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title"><i class="ti ti-photo"></i><span id="detail-title"> </span></div>
+        <button class="btn-close" onclick="closeModal('modal-detail')"><i class="ti ti-x"></i></button>
+      </div>
+      <div id="detail-body"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel-modal" onclick="closeModal('modal-detail')">Close</button>
+        <button class="btn-save" id="detail-edit-btn">Edit</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://olppjterjslxypnqccbv.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_XawzbnyWt4bs17hkhVO27A_4lun6jWY';
+    const { createClient } = supabase;
+    const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+    const THEME_KEY = 'metallica_vault_theme';
+
+    let posters = []; // joined vault_posters + gallery_posters
+    let currentUser = null;
+    let editingVaultId = null;
+
+    const condClass = {'Mint':'Mint','Near Mint':'NearMint','Very Good':'VeryGood','Good':'Good','Fair':'Fair'};
+
+    function setTheme(t) {
+      document.documentElement.setAttribute('data-theme',t);
+      localStorage.setItem(THEME_KEY,t);
+      document.getElementById('btn-dark').classList.toggle('active',t==='dark');
+      document.getElementById('btn-light').classList.toggle('active',t==='light');
+    }
+
+    async function signOut() { await sb.auth.signOut(); window.location.href='auth.html'; }
+
+    async function loadPosters() {
+      const { data, error } = await sb
+        .from('vault_posters')
+        .select('*, gallery_posters(*)')
+        .eq('user_id', currentUser.id);
+      if (!error) {
+        posters = (data||[]).map(v => ({
+          vaultId: v.id,
+          galleryId: v.gallery_id,
+          condition: v.condition,
+          value: v.value,
+          notes: v.notes,
+          acquired: v.acquired,
+          ...(v.gallery_posters||{})
+        }));
+      }
+    }
+
+    function updateStats() {
+      document.getElementById('stat-total').textContent  = posters.length;
+      document.getElementById('stat-ap').textContent     = posters.filter(p=>p.edition==='Artist Proof').length;
+      document.getElementById('stat-foil').textContent   = posters.filter(p=>p.edition==='Foil').length;
+      const total = posters.reduce((s,p)=>s+(parseFloat(p.value)||0),0);
+      document.getElementById('stat-value').textContent  = '$'+Math.round(total).toLocaleString();
+    }
+
+    function render() {
+      const q    = document.getElementById('search').value.toLowerCase().trim();
+      const ed   = document.getElementById('f-edition').value;
+      const sort = document.getElementById('f-sort').value;
+
+      let list = posters.filter(p => {
+        const qm = !q || (p.name||'').toLowerCase().includes(q) || (p.artist||'').toLowerCase().includes(q) || String(p.year||'').includes(q);
+        const em = !ed || p.edition===ed;
+        return qm && em;
+      });
+
+      if (sort==='newest')     list.sort((a,b)=>(b.year||0)-(a.year||0));
+      else if (sort==='oldest') list.sort((a,b)=>(a.year||0)-(b.year||0));
+      else if (sort==='value')  list.sort((a,b)=>(parseFloat(b.value)||0)-(parseFloat(a.value)||0));
+      else if (sort==='alpha')  list.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+
+      const grid=document.getElementById('grid'), empty=document.getElementById('empty');
+      updateStats();
+      if (list.length===0){grid.style.display='none';empty.style.display='block';return;}
+      grid.style.display='grid';empty.style.display='none';
+
+      grid.innerHTML = list.map((p,i)=>{
+        const cc  = condClass[p.condition]||'Mint';
+        const bc  = 'badge-'+(p.edition||'Regular').replace(/ /g,'');
+        const img = p.image
+          ? `<img src="${esc(p.image)}" alt="${esc(p.name||'')}" onerror="this.parentNode.innerHTML='<div class=no-img><i class=ti.ti-photo></i><span>No image</span></div>'">`
+          : `<div class="no-img"><i class="ti ti-photo"></i><span>No image</span></div>`;
+        const val = parseFloat(p.value)?`<span class="val"> · $${Math.round(p.value).toLocaleString()}</span>`:'';
+        return `<div class="poster-card" style="animation-delay:${i*25}ms">
+          <div class="poster-thumb">
+            ${img}
+            <span class="edition-badge ${bc}">${esc(p.edition||'Regular')}</span>
+          </div>
+          <div class="poster-name">${esc(p.name||'Untitled')}</div>
+          <div class="poster-meta">
+            <div>${p.year||'—'}${p.artist?' · '+esc(p.artist):''}</div>
+            <div><span class="cond-dot cond-${cc}"></span>${esc(p.condition||'Mint')}${val}</div>
+          </div>
+          <div class="card-actions">
+            <button class="btn-icon" onclick="openDetail('${p.vaultId}')" title="View"><i class="ti ti-eye"></i></button>
+            <button class="btn-icon" onclick="openEditModal('${p.vaultId}')" title="Edit"><i class="ti ti-edit"></i></button>
+            <button class="btn-icon del" onclick="removePoster('${p.vaultId}')" title="Remove"><i class="ti ti-trash"></i></button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    async function removePoster(vaultId) {
+      if (!confirm('Remove this poster from your vault?')) return;
+      const { error } = await sb.from('vault_posters').delete().eq('id', vaultId).eq('user_id', currentUser.id);
+      if (!error) { await loadPosters(); render(); }
+    }
+
+    function openEditModal(vaultId) {
+      const p = posters.find(x=>x.vaultId==vaultId); if(!p) return;
+      editingVaultId = vaultId;
+      document.getElementById('edit-title').textContent = ' '+p.name;
+      document.getElementById('e-condition').value = p.condition||'Mint';
+      document.getElementById('e-value').value     = p.value||'';
+      document.getElementById('e-acquired').value  = p.acquired||'';
+      document.getElementById('e-notes').value     = p.notes||'';
+      document.getElementById('modal-edit').classList.add('open');
+    }
+
+    async function saveEdit() {
+      const data = {
+        condition: document.getElementById('e-condition').value,
+        value:     parseFloat(document.getElementById('e-value').value)||0,
+        acquired:  document.getElementById('e-acquired').value||null,
+        notes:     document.getElementById('e-notes').value.trim(),
+      };
+      const { error } = await sb.from('vault_posters').update(data).eq('id', editingVaultId).eq('user_id', currentUser.id);
+      if (!error) { closeModal('modal-edit'); await loadPosters(); render(); }
+    }
+
+    function openDetail(vaultId) {
+      const p = posters.find(x=>x.vaultId==vaultId); if(!p) return;
+      document.getElementById('detail-title').textContent = ' '+p.name;
+      document.getElementById('detail-edit-btn').onclick = ()=>{ closeModal('modal-detail'); openEditModal(vaultId); };
+      const cc = condClass[p.condition]||'Mint';
+      const img = p.image?`<img src="${esc(p.image)}" alt="${esc(p.name||'')}" onerror="this.outerHTML='<i class=ti.ti-photo style=font-size:48px;color:var(--border-hi)></i>'">`:`<i class="ti ti-photo" style="font-size:48px;color:var(--border-hi)"></i>`;
+      const rows=[
+        ['Year',p.year||'—'],['Edition',p.edition||'Regular'],
+        p.artist?['Artist',p.artist]:null,
+        p.run?['Print Run',p.run+' prints']:null,
+        ['Condition',`<span class="cond-dot cond-${cc}"></span>${p.condition||'Mint'}`],
+        p.size?['Size',p.size]:null,
+        p.acquired?['Acquired',new Date(p.acquired).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})]:null,
+        p.value?['Est. Value',`<span class="gold">$${Math.round(p.value).toLocaleString()}</span>`]:null,
+      ].filter(Boolean);
+      document.getElementById('detail-body').innerHTML=`
+        <div class="detail-thumb">${img}</div>
+        ${rows.map(([k,v])=>`<div class="detail-row"><span class="detail-key">${k}</span><span class="detail-val">${v}</span></div>`).join('')}
+        ${p.notes?`<div class="notes-box">${esc(p.notes)}</div>`:''}
+      `;
+      document.getElementById('modal-detail').classList.add('open');
+    }
+
+    function exportCSV() {
+      if (!posters.length){alert('Nothing to export yet.');return;}
+      const cols=['name','year','edition','artist','run','condition','value','size','acquired','notes'];
+      const rows=[cols.join(','),...posters.map(p=>cols.map(c=>'"'+String(p[c]||'').replace(/"/g,'""')+'"').join(','))];
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'}));
+      a.download='metallica-vault.csv';a.click();
+    }
+
+    function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+    function closeModal(id){document.getElementById(id).classList.remove('open')}
+    document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open')}));
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.overlay.open').forEach(el=>el.classList.remove('open'))});
+
+    async function init() {
+      setTheme(localStorage.getItem(THEME_KEY)||'dark');
+      const { data:{session} } = await sb.auth.getSession();
+      if (!session){window.location.href='auth.html';return;}
+      currentUser = session.user;
+      const { data:profile } = await sb.from('profiles').select('display_name').eq('id',currentUser.id).single();
+      const name = profile?.display_name||currentUser.email.split('@')[0];
+      document.getElementById('user-name').textContent=name;
+      document.getElementById('user-avatar').textContent=name[0].toUpperCase();
+      document.getElementById('user-chip').style.display='flex';
+      await loadPosters();
+      render();
+    }
+
+    init();
+  </script>
+</body>
+</html>
