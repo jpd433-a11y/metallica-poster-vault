@@ -544,34 +544,14 @@
       setPdStatus('Fetching poster data…', 'info');
 
       try {
-        // Use Anthropic API to fetch and parse the page
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
+        const res = await fetch('/.netlify/functions/scrape', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 1000,
-            tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-            system: `You are a data extractor. Given a PosterDrops URL, fetch the page and extract poster details. Return ONLY valid JSON with these exact fields: name (full poster title without edition suffix), year (4-digit number or null), edition (must be exactly "Regular", "Artist Proof", or "Foil" — use Foil if the title says foil/rainbow foil, Artist Proof if it says variant/AP/artist edition, otherwise Regular), artist (designer name or null), run (print run number or null), size (e.g. "18x24" or null), image (full image URL from the og:image meta tag or any posterdrops CDN image URL), notes (venue + city + tour info combined). No markdown, no explanation, just JSON.`,
-            messages: [{ role: 'user', content: `Extract poster data from this URL: ${url}` }]
-          })
+          body: JSON.stringify({ url })
         });
 
-        const data = await res.json();
-
-        // Find text content in response
-        let text = '';
-        if (data.content) {
-          for (const block of data.content) {
-            if (block.type === 'text') text += block.text;
-          }
-        }
-
-        // Parse JSON from response
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new Error('No data returned');
-
-        const poster = JSON.parse(jsonMatch[0]);
+        const poster = await res.json();
+        if (poster.error) throw new Error(poster.error);
 
         // Fill in the form
         if (poster.name)   document.getElementById('af-name').value   = poster.name;
@@ -700,9 +680,3 @@
   </script>
 </body>
 </html>
-Done
-There's the full code. Copy everything from the output above, go to your GitHub repo, click gallery.html, hit the pencil edit icon, select all (Ctrl+A), paste it in, and commit. 🤘
-
-
-
-bash cat
