@@ -57,11 +57,21 @@
     .hero-title span{color:var(--red-hi)}
     .hero-sub{font-size:13px;color:var(--muted);letter-spacing:1px;margin-top:2px}
     .vault-badge{display:flex;align-items:center;gap:8px;background:var(--green-soft);border:1px solid var(--green);border-radius:4px;padding:8px 16px;font-family:'Black Ops One',cursive;font-size:13px;color:var(--green-hi);letter-spacing:1px;white-space:nowrap}
-    .artist-tabs{display:flex;gap:6px;padding:12px 24px;background:var(--toolbar-bg);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:thin}
-    .artist-tab{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--border);border-radius:3px;background:transparent;color:var(--text-sec);font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;white-space:nowrap;transition:all .15s}
-    .artist-tab:hover{border-color:var(--red);color:var(--red-hi)}
-    .artist-tab.active{background:var(--red);border-color:var(--red);color:#fff}
-    .artist-tab .count{font-size:11px;opacity:.7}
+    .artist-dir{padding:24px;max-width:1100px;margin:0 auto}
+    .artist-dir-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+    .artist-dir-top .search-wrap{flex:1;min-width:200px}
+    .btn-all{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border:1px solid var(--border);border-radius:3px;background:transparent;color:var(--text-sec);font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .15s}
+    .btn-all:hover{border-color:var(--red);color:var(--red-hi)}
+    .letter-group{margin-bottom:18px}
+    .letter{font-family:'Black Ops One',cursive;font-size:18px;color:var(--red-hi);border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:6px}
+    .artist-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:2px 16px}
+    .artist-link{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:8px 10px;border-radius:3px;background:transparent;border:none;color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:17px;letter-spacing:.5px;text-align:left;cursor:pointer;transition:background .12s,color .12s}
+    .artist-link:hover{background:var(--red-soft);color:var(--red-hi)}
+    .artist-link .count{font-size:13px;color:var(--muted)}
+    .artist-bar{display:none;align-items:center;gap:14px;padding:12px 24px;background:var(--toolbar-bg);border-bottom:1px solid var(--border)}
+    .artist-bar .btn-all{padding:7px 12px}
+    .artist-bar-name{font-family:'Black Ops One',cursive;font-size:18px;color:var(--text);letter-spacing:1px}
+    .artist-bar-count{font-size:13px;color:var(--muted);letter-spacing:1px}
     .variant-list{display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow-y:auto;margin-bottom:16px}
     .variant-row{display:flex;align-items:center;gap:12px;padding:8px;border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:border-color .15s,background .15s}
     .variant-row:hover{border-color:var(--red)}
@@ -208,9 +218,24 @@
     </div>
   </div>
 
-  <div class="artist-tabs" id="artist-tabs"></div>
+  <div class="artist-dir" id="artist-dir">
+    <div class="artist-dir-top">
+      <div class="search-wrap">
+        <i class="ti ti-search"></i>
+        <input class="search-input" type="text" id="artist-search" placeholder="Find an artist…" oninput="renderArtistDirectory()">
+      </div>
+      <button class="btn-all" onclick="selectArtist(ALL)"><i class="ti ti-layout-grid"></i> Browse all posters</button>
+    </div>
+    <div id="artist-dir-list"><div class="grid-loading">Loading artists…</div></div>
+  </div>
 
-  <div class="toolbar">
+  <div class="artist-bar" id="artist-bar">
+    <button class="btn-all" onclick="selectArtist(null)"><i class="ti ti-arrow-left"></i> All Artists</button>
+    <span class="artist-bar-name" id="artist-bar-name"></span>
+    <span class="artist-bar-count" id="artist-bar-count"></span>
+  </div>
+
+  <div class="toolbar" id="poster-toolbar">
     <div class="search-wrap">
       <i class="ti ti-search"></i>
       <input class="search-input" type="text" id="search" placeholder="Search posters…" oninput="render()">
@@ -228,7 +253,7 @@
     </select>
   </div>
 
-  <div class="grid-container">
+  <div class="grid-container" id="poster-area">
     <div class="poster-grid" id="grid"></div>
     <div class="empty-state" id="empty" style="display:none">
       <i class="ti ti-photo-off"></i>
@@ -360,7 +385,6 @@
     let vaultIds = new Set();
     let currentUser = null;
     let editId = null;
-    const ARTIST_KEY = 'metallica_vault_artist';
     const ALL = '__all__', UNKNOWN = '__unknown__';
     let artistCounts = [];       // [[name, count], …] sorted biggest first
     let currentArtist = null;
@@ -401,12 +425,8 @@
       if (error) return;
       const m = {};
       (data || []).forEach(r => { const a = (r.artist || '').trim() || UNKNOWN; m[a] = (m[a] || 0) + 1; });
-      artistCounts = Object.entries(m).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-      const names = artistCounts.map(x => x[0]);
-      if (!currentArtist || (currentArtist !== ALL && !names.includes(currentArtist))) {
-        let saved = null; try { saved = localStorage.getItem(ARTIST_KEY); } catch (e) {}
-        currentArtist = (saved === ALL || names.includes(saved)) ? saved : (names[0] || ALL);
-      }
+      artistCounts = Object.entries(m).sort((a, b) =>
+        (a[0] === UNKNOWN) - (b[0] === UNKNOWN) || a[0].localeCompare(b[0], undefined, { sensitivity: 'base', numeric: true }));
     }
 
     /* Load full poster rows for the selected artist only. */
@@ -420,29 +440,70 @@
       if (!error) gallery = data || [];
     }
 
-    function renderArtistTabs() {
-      const total = artistCounts.reduce((n, x) => n + x[1], 0);
-      const tab = (key, label, count) =>
-        `<button class="artist-tab${currentArtist === key ? ' active' : ''}" data-artist="${esc(key)}">${esc(label)} <span class="count">${count}</span></button>`;
-      document.getElementById('artist-tabs').innerHTML =
-        artistCounts.map(([a, c]) => tab(a, a === UNKNOWN ? 'Unknown' : a, c)).join('') + tab(ALL, 'All', total);
+    /* A–Z artist directory shown when the gallery opens. */
+    function renderArtistDirectory() {
+      const q = (document.getElementById('artist-search').value || '').toLowerCase().trim();
+      const list = artistCounts.filter(([a]) => !q || (a === UNKNOWN ? 'unknown' : a).toLowerCase().includes(q));
+      const groups = {};
+      list.forEach(([a, c]) => {
+        const label = a === UNKNOWN ? 'Unknown' : a;
+        const ch = a === UNKNOWN ? '?' : (/[a-z]/i.test(label[0]) ? label[0].toUpperCase() : '#');
+        (groups[ch] = groups[ch] || []).push([a, label, c]);
+      });
+      const order = Object.keys(groups).sort((x, y) => (x === '?') - (y === '?') || (x === '#') - (y === '#') || x.localeCompare(y));
+      document.getElementById('artist-dir-list').innerHTML = order.length ? order.map(ch => `
+        <div class="letter-group">
+          <div class="letter">${ch}</div>
+          <div class="artist-list">${groups[ch].map(([a, label, c]) =>
+            `<button class="artist-link" data-artist="${esc(a)}"><span>${esc(label)}</span><span class="count">${c}</span></button>`).join('')}</div>
+        </div>`).join('') : '<div class="grid-loading">No artists match.</div>';
     }
 
-    async function selectArtist(key) {
-      if (key === currentArtist) return;
-      currentArtist = key;
-      try { localStorage.setItem(ARTIST_KEY, key); } catch (e) {}
-      renderArtistTabs();
+    function showView() {
+      const inArtist = currentArtist !== null;
+      document.getElementById('artist-dir').style.display = inArtist ? 'none' : 'block';
+      document.getElementById('artist-bar').style.display = inArtist ? 'flex' : 'none';
+      document.getElementById('poster-toolbar').style.display = inArtist ? 'flex' : 'none';
+      document.getElementById('poster-area').style.display = inArtist ? 'block' : 'none';
+      if (inArtist) {
+        const hit = artistCounts.find(x => x[0] === currentArtist);
+        const total = artistCounts.reduce((n, x) => n + x[1], 0);
+        document.getElementById('artist-bar-name').textContent =
+          currentArtist === ALL ? 'All Posters' : currentArtist === UNKNOWN ? 'Unknown Artist' : currentArtist;
+        const n = currentArtist === ALL ? total : (hit ? hit[1] : 0);
+        document.getElementById('artist-bar-count').textContent = n + (n === 1 ? ' poster' : ' posters');
+      }
+    }
+
+    /* The chosen artist lives in the URL (#artist=…) so Back returns to the list. */
+    function artistFromUrl() {
+      const m = location.hash.match(/^#artist=(.*)$/);
+      return m ? decodeURIComponent(m[1]) : null;
+    }
+
+    function selectArtist(key) {
+      const h = key === null ? '' : '#artist=' + encodeURIComponent(key);
+      if (location.hash === h || (!h && !location.hash)) { openFromUrl(); return; }
+      if (h) location.hash = h; else history.pushState(null, '', location.pathname + location.search);
+      if (!h) openFromUrl();
+    }
+
+    async function openFromUrl() {
+      currentArtist = artistFromUrl();
+      showView();
+      window.scrollTo(0, 0);
+      if (currentArtist === null) { renderArtistDirectory(); return; }
+      document.getElementById('search').value = '';
       document.getElementById('grid').innerHTML = '<div class="grid-loading">Loading…</div>';
+      document.getElementById('grid').style.display = 'grid';
+      document.getElementById('empty').style.display = 'none';
       await loadGallery();
       render();
     }
 
     async function refreshGallery() {
       await loadArtistList();
-      renderArtistTabs();
-      await loadGallery();
-      render();
+      await openFromUrl();
     }
 
     async function loadVaultIds() {
@@ -839,9 +900,10 @@
     function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
     function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-    document.getElementById('artist-tabs').addEventListener('click', e => {
-      const b = e.target.closest('.artist-tab'); if (b) selectArtist(b.dataset.artist);
+    document.getElementById('artist-dir-list').addEventListener('click', e => {
+      const b = e.target.closest('.artist-link'); if (b) selectArtist(b.dataset.artist);
     });
+    window.addEventListener('popstate', openFromUrl);   // fires on hash changes and Back/Forward
     document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open')}));
     document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.overlay.open').forEach(el=>el.classList.remove('open'))});
 
