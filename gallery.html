@@ -62,6 +62,15 @@
     .artist-tab:hover{border-color:var(--red);color:var(--red-hi)}
     .artist-tab.active{background:var(--red);border-color:var(--red);color:#fff}
     .artist-tab .count{font-size:11px;opacity:.7}
+    .variant-list{display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow-y:auto;margin-bottom:16px}
+    .variant-row{display:flex;align-items:center;gap:12px;padding:8px;border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:border-color .15s,background .15s}
+    .variant-row:hover{border-color:var(--red)}
+    .variant-row.checked{border-color:var(--red);background:var(--red-soft)}
+    .variant-row.owned{opacity:.55;cursor:default}
+    .variant-row input{width:18px;height:18px;accent-color:var(--red);flex:0 0 auto}
+    .variant-row img,.variant-row .vthumb{width:44px;height:58px;object-fit:cover;border-radius:2px;flex:0 0 auto;background:var(--input-bg)}
+    .variant-label{flex:1;font-size:14px;color:var(--text);letter-spacing:.5px;line-height:1.3}
+    .variant-label small{display:block;color:var(--muted);font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-top:2px}
     .grid-loading{padding:60px 20px;text-align:center;color:var(--muted);letter-spacing:2px;text-transform:uppercase;font-size:13px}
     .toolbar{display:flex;gap:10px;padding:14px 24px;background:var(--toolbar-bg);border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center}
     .search-wrap{position:relative;flex:1;min-width:180px}
@@ -233,6 +242,19 @@
   </footer>
 
   <!-- DETAIL MODAL -->
+  <div class="overlay" id="modal-variant">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title"><i class="ti ti-stack-2"></i><span>Which one do you own?</span></div>
+        <button class="btn-close" onclick="closeModal('modal-variant')"><i class="ti ti-x"></i></button>
+      </div>
+      <div id="variant-show" style="font-size:13px;color:var(--muted);letter-spacing:1px;margin:-8px 0 12px"></div>
+      <div class="variant-list" id="variant-list"></div>
+      <button class="btn-add-big" id="btn-variant-add" onclick="addSelectedVariants()"><i class="ti ti-bookmarks"></i> Add to My Vault</button>
+      <button class="btn-cancel" style="width:100%;margin-top:8px" onclick="closeModal('modal-variant')">Cancel</button>
+    </div>
+  </div>
+
   <div class="overlay" id="modal-detail">
     <div class="modal">
       <div class="modal-header">
@@ -362,9 +384,20 @@
     }
 
     /* ── DATA ── */
+    /* Supabase returns at most 1000 rows per request, so page through. */
+    async function fetchAll(build) {
+      const out = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await build().range(from, from + 999);
+        if (error) return { data: out, error };
+        out.push(...(data || []));
+        if (!data || data.length < 1000) return { data: out, error: null };
+      }
+    }
+
     /* Load just the artist names (tiny) to build the tabs. */
     async function loadArtistList() {
-      const { data, error } = await sb.from('gallery_posters').select('artist');
+      const { data, error } = await fetchAll(() => sb.from('gallery_posters').select('artist').order('id'));
       if (error) return;
       const m = {};
       (data || []).forEach(r => { const a = (r.artist || '').trim() || UNKNOWN; m[a] = (m[a] || 0) + 1; });
@@ -378,10 +411,12 @@
 
     /* Load full poster rows for the selected artist only. */
     async function loadGallery() {
-      let q = sb.from('gallery_posters').select('*').order('created_at', { ascending: false });
-      if (currentArtist === UNKNOWN) q = q.or('artist.is.null,artist.eq.');
-      else if (currentArtist && currentArtist !== ALL) q = q.eq('artist', currentArtist);
-      const { data, error } = await q;
+      const { data, error } = await fetchAll(() => {
+        let q = sb.from('gallery_posters').select('*').order('created_at', { ascending: false }).order('id');
+        if (currentArtist === UNKNOWN) q = q.or('artist.is.null,artist.eq.');
+        else if (currentArtist && currentArtist !== ALL) q = q.eq('artist', currentArtist);
+        return q;
+      });
       if (!error) gallery = data || [];
     }
 
@@ -416,19 +451,73 @@
       vaultIds = new Set((data || []).map(r => r.gallery_id));
     }
 
+    /* Variants = same artist + same show title (the part before the first " - "). */
+    function variantBase(p) {
+      const n = (p.name || '').trim().toLowerCase(), b = n.split(' - ')[0].trim();
+      return b === 'metallica' ? n : b;   // "Metallica - Toronto Pop-Up 2025" style: whole name is the show
+    }
+    function variantLabel(p) {
+      const parts = (p.name || '').split(' - ');
+      if (parts.length > 1 && parts[0].trim().toLowerCase() !== 'metallica') return parts.slice(1).join(' - ');
+      return p.edition;
+    }
+    function variantsOf(p) {
+      const b = variantBase(p);
+      return gallery.filter(x => (x.artist || '') === (p.artist || '') && variantBase(x) === b)
+        .sort((a, c) => ['Regular','Artist Proof','Foil'].indexOf(a.edition) - ['Regular','Artist Proof','Foil'].indexOf(c.edition) || variantLabel(a).localeCompare(variantLabel(c)));
+    }
+
+    async function insertVault(ids) {
+      const rows = ids.filter(id => !vaultIds.has(id)).map(id => ({ user_id: currentUser.id, gallery_id: id, condition: 'Mint', value: 0, notes: '' }));
+      if (!rows.length) return 0;
+      const { error } = await sb.from('vault_posters').insert(rows);
+      if (error) { showToast('Could not add: ' + error.message); return 0; }
+      rows.forEach(r => vaultIds.add(r.gallery_id));
+      updateVaultBadge();
+      render();
+      return rows.length;
+    }
+
     async function addToVault(galleryId, e) {
       if (e) e.stopPropagation();
       if (!currentUser) { window.location.href = 'auth.html'; return; }
       if (vaultIds.has(galleryId)) return;
-      const { error } = await sb.from('vault_posters').insert({
-        user_id: currentUser.id, gallery_id: galleryId, condition: 'Mint', value: 0, notes: ''
-      });
-      if (!error) {
-        vaultIds.add(galleryId);
-        showToast('Added to your vault!');
-        updateVaultBadge();
-        render();
-      }
+      const p = gallery.find(x => x.id === galleryId);
+      const vars = p ? variantsOf(p) : [];
+      if (vars.length > 1) { openVariantPicker(p, vars); return; }
+      if (await insertVault([galleryId])) showToast('Added to your vault!');
+    }
+
+    function openVariantPicker(p, vars) {
+      closeModal('modal-detail');
+      document.getElementById('variant-show').textContent = (p.name || '').split(' - ')[0];
+      document.getElementById('variant-list').innerHTML = vars.map(v => {
+        const owned = vaultIds.has(v.id), checked = v.id === p.id && !owned;
+        const thumb = v.image ? `<img src="${esc(v.image)}" alt="" loading="lazy">` : `<div class="vthumb"></div>`;
+        return `<label class="variant-row${owned ? ' owned' : ''}${checked ? ' checked' : ''}">
+          <input type="checkbox" value="${v.id}" ${checked ? 'checked' : ''} ${owned ? 'disabled' : ''}
+            onchange="this.closest('.variant-row').classList.toggle('checked', this.checked); updateVariantBtn()">
+          ${thumb}
+          <div class="variant-label">${esc(variantLabel(v))}<small>${esc(v.edition)}${owned ? ' · already in your vault' : ''}</small></div>
+        </label>`;
+      }).join('');
+      updateVariantBtn();
+      document.getElementById('modal-variant').classList.add('open');
+    }
+
+    function updateVariantBtn() {
+      const n = document.querySelectorAll('#variant-list input:checked').length;
+      const btn = document.getElementById('btn-variant-add');
+      btn.disabled = n === 0; btn.style.opacity = n ? 1 : .5;
+      btn.innerHTML = `<i class="ti ti-bookmarks"></i> ${n > 1 ? 'Add ' + n + ' to My Vault' : 'Add to My Vault'}`;
+    }
+
+    async function addSelectedVariants() {
+      const ids = [...document.querySelectorAll('#variant-list input:checked')].map(i => +i.value);
+      if (!ids.length) return;
+      const n = await insertVault(ids);
+      closeModal('modal-variant');
+      if (n) showToast(n > 1 ? `Added ${n} to your vault!` : 'Added to your vault!');
     }
 
     function updateVaultBadge() {
