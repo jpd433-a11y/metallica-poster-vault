@@ -170,6 +170,7 @@
         <span class="user-name" id="user-name">User</span>
         <button class="btn-signout" onclick="signOut()" title="Sign out"><i class="ti ti-logout"></i></button>
       </div>
+      <a class="nav-tab active" id="btn-guest-signin" href="auth.html" style="display:none"><i class="ti ti-login"></i> Sign In</a>
     </div>
   </header>
 
@@ -185,7 +186,7 @@
       <div class="hero-sub">Browse every Metallica concert poster — add the ones you own to your vault</div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <div class="vault-badge"><i class="ti ti-bookmarks"></i><span id="vault-count">0 in your vault</span></div>
+      <div class="vault-badge" id="vault-badge"><i class="ti ti-bookmarks"></i><span id="vault-count">0 in your vault</span></div>
       <a href="index.html" style="display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--text-sec);padding:8px 14px;font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;text-decoration:none;transition:all .15s" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red-hi)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-sec)'">
         <i class="ti ti-arrow-right"></i> View Vault
       </a>
@@ -408,7 +409,9 @@
           : `<div class="no-img"><i class="ti ti-photo"></i><span>No image</span></div>`;
         const vaultBtn = inV
           ? `<button class="btn-vault added"><i class="ti ti-check"></i> In Your Vault</button>`
-          : `<button class="btn-vault add" onclick="addToVault(${p.id},event)"><i class="ti ti-bookmarks"></i> Add to Vault</button>`;
+          : currentUser
+            ? `<button class="btn-vault add" onclick="addToVault(${p.id},event)"><i class="ti ti-bookmarks"></i> Add to Vault</button>`
+            : `<button class="btn-vault add" onclick="addToVault(${p.id},event)"><i class="ti ti-login"></i> Sign In to Collect</button>`;
         const adminBtns = admin ? `
           <div style="display:flex;gap:6px;margin-top:6px">
             <button onclick="openEdit(${p.id},event)" style="flex:1;padding:6px;background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--muted);cursor:pointer;font-size:12px;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px;text-transform:uppercase;transition:all .15s" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red-hi)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><i class="ti ti-edit"></i> Edit</button>
@@ -444,7 +447,9 @@
       ].filter(Boolean);
       const action = inV
         ? `<div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;background:var(--green-soft);border:1px solid var(--green);border-radius:3px;color:var(--green-hi);font-family:'Black Ops One',cursive;font-size:13px;letter-spacing:2px;margin-top:4px"><i class="ti ti-check"></i> Already in Your Vault</div>`
-        : `<button class="btn-add-big" onclick="addToVault(${p.id});closeModal('modal-detail')"><i class="ti ti-bookmarks"></i> Add to My Vault</button>`;
+        : currentUser
+          ? `<button class="btn-add-big" onclick="addToVault(${p.id});closeModal('modal-detail')"><i class="ti ti-bookmarks"></i> Add to My Vault</button>`
+          : `<button class="btn-add-big" onclick="addToVault(${p.id})"><i class="ti ti-login"></i> Sign In to Collect</button>`;
       document.getElementById('detail-body').innerHTML = `
         <div class="detail-layout">
           <div class="detail-thumb-sm">${img}</div>
@@ -698,7 +703,16 @@
     async function init() {
       setTheme(localStorage.getItem(THEME_KEY)||'dark');
       const { data: { session } } = await sb.auth.getSession();
-      if (!session) { window.location.href='auth.html'; return; }
+      if (!session) {
+        // Guest mode: browse only. Adding anything sends them to sign in.
+        currentUser = null;
+        document.getElementById('btn-guest-signin').style.display = 'inline-flex';
+        document.getElementById('vault-badge').style.display = 'none';
+        document.querySelector('.nav-tab[href="index.html"]').href = 'auth.html';
+        await loadGallery();
+        render();
+        return;
+      }
       currentUser = session.user;
 
       // show user chip
