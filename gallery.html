@@ -176,6 +176,7 @@
   <div class="admin-bar" id="admin-bar" style="display:none">
     <div class="admin-label"><i class="ti ti-shield"></i> Admin Mode</div>
     <button class="btn-admin" onclick="openAddModal()"><i class="ti ti-plus"></i> Add Poster</button>
+    <button class="btn-admin" id="btn-shrink" onclick="shrinkExistingImages()"><i class="ti ti-bolt"></i> Shrink Images</button>
   </div>
 
   <div class="hero">
@@ -403,7 +404,7 @@
         const inV = vaultIds.has(p.id);
         const bc  = 'badge-' + p.edition.replace(/ /g,'');
         const img = p.image
-          ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" onerror="this.parentNode.innerHTML='<div class=no-img><i class=ti.ti-photo></i><span>No image</span></div>'">`
+          ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" decoding="async" onerror="this.parentNode.innerHTML='<div class=no-img><i class=ti.ti-photo></i><span>No image</span></div>'">`
           : `<div class="no-img"><i class="ti ti-photo"></i><span>No image</span></div>`;
         const vaultBtn = inV
           ? `<button class="btn-vault added"><i class="ti ti-check"></i> In Your Vault</button>`
@@ -413,7 +414,7 @@
             <button onclick="openEdit(${p.id},event)" style="flex:1;padding:6px;background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--muted);cursor:pointer;font-size:12px;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px;text-transform:uppercase;transition:all .15s" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red-hi)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><i class="ti ti-edit"></i> Edit</button>
             <button onclick="deletePoster(${p.id},event)" style="padding:6px 10px;background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--muted);cursor:pointer;font-size:14px;transition:all .15s" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red-hi)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><i class="ti ti-trash"></i></button>
           </div>` : '';
-        return `<div class="poster-card${inV?' in-vault':''}" style="animation-delay:${i*25}ms">
+        return `<div class="poster-card${inV?' in-vault':''}" style="animation-delay:${Math.min(i,12)*25}ms">
           <div class="poster-thumb" onclick="openDetail(${p.id})" style="cursor:pointer">
             ${img}
             <span class="edition-badge ${bc}">${esc(p.edition)}</span>
@@ -598,8 +599,49 @@
 
     function readFile(file) {
       const r = new FileReader();
-      r.onload = e => { showPreview(e.target.result); document.getElementById('af-image').value=e.target.result; document.getElementById('af-image-url').value=''; };
+      r.onload = async e => {
+        const small = await compressDataUrl(e.target.result);
+        showPreview(small); document.getElementById('af-image').value=small; document.getElementById('af-image-url').value='';
+      };
       r.readAsDataURL(file);
+    }
+
+    /* Resize to max 1000px on the long side and save as JPEG.
+       A 3–5 MB phone photo becomes roughly 100–200 KB. */
+    function compressDataUrl(src, maxSide = 1000, quality = 0.82) {
+      return new Promise(resolve => {
+        const im = new Image();
+        im.onload = () => {
+          const scale = Math.min(1, maxSide / Math.max(im.width, im.height));
+          const c = document.createElement('canvas');
+          c.width = Math.round(im.width * scale); c.height = Math.round(im.height * scale);
+          c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+          const out = c.toDataURL('image/jpeg', quality);
+          resolve(out.length < src.length ? out : src);
+        };
+        im.onerror = () => resolve(src);
+        im.src = src;
+      });
+    }
+
+    /* One-time admin tool: re-compress images already saved inside the database. */
+    async function shrinkExistingImages() {
+      const big = gallery.filter(p => (p.image||'').startsWith('data:') && p.image.length > 250000);
+      if (!big.length) { showToast('All images are already small.'); return; }
+      if (!confirm(`Shrink ${big.length} oversized image(s)? This replaces them with smaller copies.`)) return;
+      const btn = document.getElementById('btn-shrink');
+      let saved = 0, done = 0;
+      for (const p of big) {
+        btn.textContent = `Shrinking ${++done}/${big.length}…`;
+        const small = await compressDataUrl(p.image);
+        if (small.length < p.image.length) {
+          const { error } = await sb.from('gallery_posters').update({ image: small }).eq('id', p.id);
+          if (!error) { saved += p.image.length - small.length; p.image = small; }
+        }
+      }
+      btn.innerHTML = '<i class="ti ti-bolt"></i> Shrink Images';
+      render();
+      showToast(`Done. Saved about ${(saved/1e6).toFixed(1)} MB per page load.`);
     }
 
     function onUrlInput() {
