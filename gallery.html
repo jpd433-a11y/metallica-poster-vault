@@ -737,7 +737,13 @@
       const [removed] = gallery.splice(idx, 1);
       const a = (removed.artist || '').trim() || UNKNOWN;
       const ac = artistCounts.find(x => x[0] === a); if (ac) ac[1]--;
-      render(); showView();
+      // Just drop this one card (re-rendering replays every card's fade-in).
+      const card = e && e.target && e.target.closest('.poster-card');
+      if (card) {
+        card.style.transition = 'opacity .15s'; card.style.opacity = '0';
+        setTimeout(() => { card.remove(); if (!gallery.length) render(); }, 150);
+      } else render();
+      showView();
       const { error } = await sb.from('gallery_posters').delete().eq('id', id);
       if (error) {
         gallery.splice(idx, 0, removed); if (ac) ac[1]++;
