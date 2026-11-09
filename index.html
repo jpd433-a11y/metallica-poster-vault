@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
@@ -385,10 +385,10 @@
         const cc = condClass[p.condition] || 'Mint';
         const bc = 'badge-' + (p.edition||'Regular').replace(/ /g,'');
         const img = p.image
-          ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" onerror="this.parentNode.innerHTML='<div class=no-img><i class=ti.ti-photo></i><span>No image</span></div>'">`
+          ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" decoding="async" onerror="this.parentNode.innerHTML='<div class=no-img><i class=ti.ti-photo></i><span>No image</span></div>'">`
           : `<div class="no-img"><i class="ti ti-photo"></i><span>No image</span></div>`;
         const val = p.value ? `<span class="val"> · $${Math.round(p.value).toLocaleString()}</span>` : '';
-        return `<div class="poster-card" style="animation-delay:${i*25}ms">
+        return `<div class="poster-card" style="animation-delay:${Math.min(i,12)*25}ms">
           <div class="poster-thumb">
             ${img}
             <span class="edition-badge ${bc}">${esc(p.edition||'Regular')}</span>
