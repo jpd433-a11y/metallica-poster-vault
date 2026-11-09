@@ -731,8 +731,22 @@
     async function deletePoster(id, e) {
       if (e) e.stopPropagation();
       if (!confirm('Remove this poster from the gallery?')) return;
+      // Remove it from the page right away, then delete in the background.
+      const idx = gallery.findIndex(x => x.id === id);
+      if (idx < 0) return;
+      const [removed] = gallery.splice(idx, 1);
+      const a = (removed.artist || '').trim() || UNKNOWN;
+      const ac = artistCounts.find(x => x[0] === a); if (ac) ac[1]--;
+      render(); showView();
       const { error } = await sb.from('gallery_posters').delete().eq('id', id);
-      if (!error) { await refreshGallery(); showToast('Poster removed.'); }
+      if (error) {
+        gallery.splice(idx, 0, removed); if (ac) ac[1]++;
+        render(); showView();
+        showToast('Could not remove: ' + error.message);
+        return;
+      }
+      if (ac && ac[1] <= 0) artistCounts = artistCounts.filter(x => x !== ac);
+      showToast('Poster removed.');
     }
 
     function showFormError(msg) {
