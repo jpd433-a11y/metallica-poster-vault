@@ -500,7 +500,7 @@
     async function init() {
       setTheme(localStorage.getItem(THEME_KEY) || 'dark');
       const { data: { session } } = await sb.auth.getSession();
-      if (!session) { window.location.href = 'auth.html'; return; }
+      if (!session) { window.location.href = 'gallery.html'; return; }
       currentUser = session.user;
 
       const { data: profile } = await sb.from('profiles').select('display_name').eq('id', currentUser.id).single();
