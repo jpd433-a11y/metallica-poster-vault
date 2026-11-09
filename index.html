@@ -401,20 +401,26 @@
           <div class="card-actions">
             <button class="btn-icon" onclick="openDetail('${p.vaultId}')" title="View"><i class="ti ti-eye"></i></button>
             <button class="btn-icon" onclick="openEditModal('${p.vaultId}')" title="Edit"><i class="ti ti-edit"></i></button>
-            <button class="btn-icon del" onclick="removePoster('${p.vaultId}')" title="Remove"><i class="ti ti-trash"></i></button>
+            <button class="btn-icon del" onclick="removePoster('${p.vaultId}', this)" title="Remove"><i class="ti ti-trash"></i></button>
           </div>
         </div>`;
       }).join('');
     }
 
-    async function removePoster(vaultId) {
+    async function removePoster(vaultId, btn) {
       if (!confirm('Remove this poster from your collection?')) return;
+      // Remove the card right away; only redraw everything if the delete fails.
+      const before = posters;
+      posters = posters.filter(p => p.vaultId != vaultId);
+      const card = btn && btn.closest('.poster-card');
+      if (card) {
+        card.style.transition = 'opacity .15s'; card.style.opacity = '0';
+        setTimeout(() => { card.remove(); if (!posters.length) render(); }, 150);
+      } else render();
       const { error } = await sb.from('vault_posters').delete().eq('id', vaultId).eq('user_id', currentUser.id);
-      if (!error) {
-        posters = posters.filter(p => p.vaultId != vaultId);
-        render();
-      } else {
+      if (error) {
         console.error('Remove error:', error);
+        posters = before; render();
         alert('Could not remove poster. Please try again.');
       }
     }
